@@ -1,0 +1,917 @@
+{
+  "info": {
+    "_postman_id": "0a43777d-ae9f-4cd0-962d-d252b7e6525b",
+    "name": "Corium Ludo API",
+    "description": "API collection for Corium Ludo. Base URL: http://localhost:13000/corium/ludo/api\n\nFlow:\n1) Login as MR to get a Bearer token. ONLY MRs can create task entries; AM/RM/ZM get a 403 if they try.\n2) MR creates a task entry and uploads document IMAGES only (multipart 'documents'). Non-image formats are rejected with a 400 error.\n   - Task 1 (Doctor Conversions): num_prescriptions & num_pob both OPTIONAL. Any number of images. Approval = FLAT 6 points.\n   - Task 2 (POB): EXACTLY 1 image, num_pob (units) required > 0. Points = floor(num_pob/5)*2, computed on the fly (no total_points column).\n   - Task 3 (Combo POB): EXACTLY 1 image, doctor_name & pcode both REQUIRED.\n   - Task 4 (Live Prescriptions): images MUST equal num_prescriptions. 2 points per approved image.\n   - Task 5 (JCC): any images.\n3) The MR's AM/RM/ZM (organogram hierarchy: AM->MR, RM->AM+MR, ZM->RM+AM+MR) lists pending documents and bulk approves.\n4) MRs are NOT allowed to approve (403).\n\nTask keys: doctor_conversions, pob, combo_pob, live_prescriptions, jcc_conversion",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "5599247",
+    "_collection_link": "https://go.postman.co/collection/5599247-0a43777d-ae9f-4cd0-962d-d252b7e6525b?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (MR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) { pm.collectionVariables.set('token', json.token); }",
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emp_code\": \"{{mrEmpCode}}\",\n  \"password\": \"corium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Static password is 'corium'. Copies token into the {{token}} variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (AM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) { pm.collectionVariables.set('token', json.token); }",
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emp_code\": \"{{amEmpCode}}\",\n  \"password\": \"corium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login as AM/RM/ZM to approve documents. Sets {{token}} to the manager's token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Get all tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctor Conversions",
+      "item": [
+        {
+          "name": "Create entry (upload docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "doctor_name",
+                  "value": "Dr. Sharma",
+                  "type": "text"
+                },
+                {
+                  "key": "pcode",
+                  "value": "P12345",
+                  "type": "text"
+                },
+                {
+                  "key": "num_prescriptions",
+                  "value": "9",
+                  "type": "text"
+                },
+                {
+                  "key": "num_pob",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": [
+                    "/Users/harsh.gohil/Documents/Certificate_Harsh_Gohil.jpg",
+                    "/Users/harsh.gohil/Documents/ChatGPT Image Jan 8, 2026, 01_01_01 PM.png",
+                    "/Users/harsh.gohil/Documents/Gemini_Generated_Image_7juup17juup17juu.png"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/doctor_conversions/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "doctor_conversions",
+                "entries"
+              ]
+            },
+            "description": "MR-only. mr_emp_code is taken from the logged-in token. Attach IMAGE files to 'documents' (png/jpg/jpeg/webp/gif/bmp). num_prescriptions and num_pob are both OPTIONAL (fill either). Image count is NOT validated. On approval the entry gets a FLAT 6 points regardless of number of images."
+          },
+          "response": []
+        },
+        {
+          "name": "List entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/doctor_conversions/entries?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "doctor_conversions",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page). Response includes pagination.total, page, limit, total_pages. Managers see their team; MR sees own entries."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending documents (manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/doctor_conversions/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "doctor_conversions",
+                "documents",
+                "pending"
+              ]
+            },
+            "description": "Lists pending docs for the logged-in user's team per the organogram hierarchy: AM sees their MRs, RM sees AMs+MRs under them, ZM sees RM+AM+MR, MR sees their own."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / reject documents (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvals\": [\n    { \"id\": 1, \"status\": \"approved\", \"remarks\": \"Verified\" },\n    { \"id\": 2, \"status\": \"approved\", \"remarks\": \"Verified\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/doctor_conversions/documents/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "doctor_conversions",
+                "documents",
+                "approve"
+              ]
+            },
+            "description": "Bulk approve/reject. Only AM/RM/ZM can approve docs of their team (the MR who uploaded). MRs get a 403. Every approved document awards a fixed 2 points; do not send points."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POB",
+      "item": [
+        {
+          "name": "Create entry (upload docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "doctor_name",
+                  "value": "Dr. Verma",
+                  "type": "text"
+                },
+                {
+                  "key": "pcode",
+                  "value": "P22334",
+                  "type": "text"
+                },
+                {
+                  "key": "num_pob",
+                  "value": "25",
+                  "type": "text"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": "/Users/harsh.gohil/Documents/Gerijoint F1 Theme Final Poster.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/pob/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "pob",
+                "entries"
+              ]
+            },
+            "description": "MR-only. Attach EXACTLY 1 IMAGE file to 'documents'. num_pob (units) is required and > 0. Points are NOT stored; they are computed on the fly as floor(num_pob/5)*2 (e.g. 25 units = 10 points, 5 = 2, 10 = 4). total_points column does not exist for this task."
+          },
+          "response": []
+        },
+        {
+          "name": "List entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/pob/entries?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "pob",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page). Response includes pagination.total, page, limit, total_pages."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending documents (manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/pob/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "pob",
+                "documents",
+                "pending"
+              ]
+            },
+            "description": "Lists pending docs for the logged-in user's team per the organogram hierarchy."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / reject documents (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvals\": [\n    { \"id\": 3, \"status\": \"approved\", \"remarks\": \"Verified\" }\n    // { \"id\": 4, \"status\": \"rejected\", \"remarks\": \"Blurry\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/pob/documents/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "pob",
+                "documents",
+                "approve"
+              ]
+            },
+            "description": "Bulk approve/reject. Only AM/RM/ZM can approve docs of their team (the MR who uploaded). MRs get a 403. POB points are computed from num_pob (floor(num_pob/5)*2) on approval; do not send points."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Combo POB",
+      "item": [
+        {
+          "name": "Create entry (upload docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "doctor_name",
+                  "value": "Dr. Iyer",
+                  "type": "text"
+                },
+                {
+                  "key": "pcode",
+                  "value": "P33445",
+                  "type": "text"
+                },
+                {
+                  "key": "tab1_units",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "tab2_units",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": "/Users/harsh.gohil/Documents/Gerijoint F1 Theme Final Poster.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/combo_pob/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "combo_pob",
+                "entries"
+              ]
+            },
+            "description": "MR-only. Attach EXACTLY 1 IMAGE file to 'documents'. doctor_name and pcode are BOTH REQUIRED (no blank fields allowed), otherwise a 400 error is returned. tab1_units and tab2_units are the unit counts."
+          },
+          "response": []
+        },
+        {
+          "name": "List entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/combo_pob/entries?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "combo_pob",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page)."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending documents (manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/combo_pob/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "combo_pob",
+                "documents",
+                "pending"
+              ]
+            },
+            "description": "Lists pending docs for the logged-in user's team per the organogram hierarchy."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / reject documents (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvals\": [\n    { \"id\": 1, \"status\": \"approved\", \"remarks\": \"Verified\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/combo_pob/documents/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "combo_pob",
+                "documents",
+                "approve"
+              ]
+            },
+            "description": "Bulk approve/reject. Only AM/RM/ZM can approve docs of their team (the MR who uploaded). MRs get a 403. Every approved document awards a fixed 2 points; do not send points."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Live Prescriptions",
+      "item": [
+        {
+          "name": "Create entry (upload docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "doctor_name",
+                  "value": "Dr. Rao",
+                  "type": "text"
+                },
+                {
+                  "key": "pcode",
+                  "value": "P44556",
+                  "type": "text"
+                },
+                {
+                  "key": "num_prescriptions",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": [
+                    "/Users/harsh.gohil/Documents/Alembic Logo.png",
+                    "/Users/harsh.gohil/Documents/Certificate_Harsh_Gohil.jpg",
+                    "/Users/harsh.gohil/Documents/ChatGPT Image Jan 8, 2026, 01_01_01 PM.png"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/live_prescriptions/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "live_prescriptions",
+                "entries"
+              ]
+            },
+            "description": "MR-only. Attach IMAGE files to 'documents'. The number of images MUST equal num_prescriptions, otherwise a 400 error is returned. Unlimited images allowed, non-image formats rejected."
+          },
+          "response": []
+        },
+        {
+          "name": "List entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/live_prescriptions/entries?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "live_prescriptions",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page)."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending documents (manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/live_prescriptions/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "live_prescriptions",
+                "documents",
+                "pending"
+              ]
+            },
+            "description": "Lists pending docs for the logged-in user's team per the organogram hierarchy."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / reject documents (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"approvals\": [\n        {\n            \"id\": 1,\n            \"status\": \"approved\",\n            \"remarks\": \"Verified\"\n        },\n        {\n            \"id\": 2,\n            \"status\": \"approved\",\n            \"remarks\": \"Verified\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/live_prescriptions/documents/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "live_prescriptions",
+                "documents",
+                "approve"
+              ]
+            },
+            "description": "Bulk approve/reject. Only AM/RM/ZM can approve docs of their team (the MR who uploaded). MRs get a 403. Every approved document awards a fixed 2 points; do not send points."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "JCC Conversion",
+      "item": [
+        {
+          "name": "Create entry (upload docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "meeting_with",
+                  "value": "AM",
+                  "type": "text"
+                },
+                {
+                  "key": "doctor_name",
+                  "value": "Dr. Nair",
+                  "type": "text"
+                },
+                {
+                  "key": "pcode",
+                  "value": "P55667",
+                  "type": "text"
+                },
+                {
+                  "key": "num_prescriptions_pob",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/jcc_conversion/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "jcc_conversion",
+                "entries"
+              ]
+            },
+            "description": "MR-only. Attach IMAGE files to 'documents'. Unlimited images allowed, non-image formats rejected. Image count is not validated for this task."
+          },
+          "response": []
+        },
+        {
+          "name": "List entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/jcc_conversion/entries?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "jcc_conversion",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page)."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending documents (manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/jcc_conversion/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "jcc_conversion",
+                "documents",
+                "pending"
+              ]
+            },
+            "description": "Lists pending docs for the logged-in user's team per the organogram hierarchy."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / reject documents (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvals\": [\n    { \"id\": 1, \"status\": \"approved\", \"remarks\": \"Verified\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/task-entries/jcc_conversion/documents/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "task-entries",
+                "jcc_conversion",
+                "documents",
+                "approve"
+              ]
+            },
+            "description": "Bulk approve/reject. Only AM/RM/ZM can approve docs of their team (the MR who uploaded). MRs get a 403. Every approved document awards a fixed 2 points; do not send points."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:13000/corium/ludo/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "mrEmpCode",
+      "value": "MR001"
+    },
+    {
+      "key": "amEmpCode",
+      "value": "AM001"
+    }
+  ]
+}

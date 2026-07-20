@@ -1,0 +1,28 @@
+{
+  "name": "corium-ludo-api",
+  "version": "1.0.0",
+  "description": "Corium Ludo API",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop corium-ludo-api",
+    "pm2:restart": "pm2 restart corium-ludo-api",
+    "pm2:delete": "pm2 delete corium-ludo-api"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^1.4.5-lts.2",
+    "mysql2": "^3.11.4",
+    "sequelize": "^6.37.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
