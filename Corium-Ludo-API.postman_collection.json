@@ -140,7 +140,7 @@
                 "team-summary"
               ]
             },
-            "description": "AM/RM/ZM only. Returns every MR under the logged-in manager with their total_points and total_crowns across all tasks, plus team_total_points and team_total_crowns."
+            "description": "MR/AM/RM/ZM. For a manager it returns every MR under them; for an MR it returns all peer MRs sharing the same manager(s), each with total_points and total_crowns, plus team_total_points and team_total_crowns."
           },
           "response": []
         },

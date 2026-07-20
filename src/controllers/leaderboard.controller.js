@@ -3,7 +3,7 @@ const { CROWN_POINTS, computeMrPoints } = require('../utils/points');
 
 const loadOrgMap = async () => {
   const rows = await Organogram.findAll({
-    attributes: ['emp_code', 'level', 'AM_employee_code', 'RM_employee_code', 'ZM_employee_code']
+    attributes: ['emp_code', 'level', 'region', 'AM_employee_code', 'RM_employee_code', 'ZM_employee_code']
   });
   const map = {};
   rows.forEach((r) => { map[r.emp_code] = r; });
@@ -21,7 +21,7 @@ const isUnderManager = (map, ownerCode, managerCode, visited = new Set()) => {
 };
 
 const getApprovableEmpCodes = (user, map) => {
-  if (!['AM', 'RM', 'ZM'].includes(user.level)) return [];
+  if (!['MR', 'AM', 'RM', 'ZM'].includes(user.level)) return [];
   return Object.keys(map).filter(
     (code) => code !== user.emp_code && isUnderManager(map, code, user.emp_code)
   );
@@ -46,16 +46,27 @@ const leaderboardController = {
     try {
       const user = req.user && req.user.user;
       if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-      if (!['AM', 'RM', 'ZM'].includes(user.level)) {
+      if (!['MR', 'AM', 'RM', 'ZM'].includes(user.level)) {
         return res.status(403).json({
           success: false,
-          message: 'Only AM/RM/ZM can view their team leaderboard'
+          message: 'Only MR/AM/RM/ZM can view the team leaderboard'
         });
       }
 
       const map = await loadOrgMap();
-      const approvable = getApprovableEmpCodes(user, map);
-      const mrCodes = approvable.filter((code) => map[code] && map[code].level === 'MR');
+      let mrCodes = [];
+      if (user.level === 'MR') {
+        const self = map[user.emp_code];
+        const region = self ? (self.region || '').trim() : '';
+        mrCodes = Object.keys(map).filter((code) => {
+          const o = map[code];
+          if (!o || o.level !== 'MR' || !region) return false;
+          return (o.region || '').trim() === region;
+        });
+      } else {
+        const approvable = getApprovableEmpCodes(user, map);
+        mrCodes = approvable.filter((code) => map[code] && map[code].level === 'MR');
+      }
 
       const orgRows = await Organogram.findAll({ where: { emp_code: mrCodes } });
       const members = await Promise.all(orgRows.map(buildMember));
