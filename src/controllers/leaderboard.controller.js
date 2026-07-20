@@ -27,6 +27,22 @@ const getApprovableEmpCodes = (user, map) => {
   );
 };
 
+const getMembersUnder = (map, managerCode, levels) => {
+  return Object.keys(map).filter((code) => {
+    if (code === managerCode) return false;
+    const o = map[code];
+    if (!o || !levels.includes(o.level)) return false;
+    return isUnderManager(map, code, managerCode);
+  });
+};
+
+const computeManagerPoints = async (managerCode, map) => {
+  const mrCodes = getMembersUnder(map, managerCode, ['MR']);
+  let total = 0;
+  for (const code of mrCodes) total += await computeMrPoints(code);
+  return total;
+};
+
 const buildMember = async (org) => {
   const total_points = await computeMrPoints(org.emp_code);
   return {
@@ -103,6 +119,53 @@ const leaderboardController = {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: 'Error fetching India summary', error: error.message });
+    }
+  },
+
+  managersSummary: async (req, res) => {
+    try {
+      const user = req.user && req.user.user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+      if (!['AM', 'RM', 'ZM'].includes(user.level)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only AM/RM/ZM can view the managers leaderboard'
+        });
+      }
+
+      const levelByRole = { AM: ['AM'], RM: ['AM', 'RM'], ZM: ['AM', 'RM', 'ZM'] };
+      const levels = levelByRole[user.level] || [];
+
+      const map = await loadOrgMap();
+      const grouped = { AM: [], RM: [], ZM: [] };
+
+      for (const level of levels) {
+        const orgRows = await Organogram.findAll({ where: { level } });
+        const members = await Promise.all(
+          orgRows.map(async (org) => {
+            const points = await computeManagerPoints(org.emp_code, map);
+            return {
+              emp_code: org.emp_code,
+              emp_name: org.emp_name,
+              hq: org.hq,
+              region: org.region,
+              zone: org.zone,
+              total_points: points,
+              total_crowns: Math.floor(points / CROWN_POINTS)
+            };
+          })
+        );
+        grouped[level] = members;
+      }
+
+      res.json({
+        success: true,
+        AM: grouped.AM,
+        RM: grouped.RM,
+        ZM: grouped.ZM
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error fetching managers summary', error: error.message });
     }
   }
 };
