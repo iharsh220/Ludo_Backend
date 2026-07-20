@@ -119,6 +119,54 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Team leaderboard (my MRs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/team-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "team-summary"
+              ]
+            },
+            "description": "AM/RM/ZM only. Returns every MR under the logged-in manager with their total_points and total_crowns across all tasks, plus team_total_points and team_total_crowns."
+          },
+          "response": []
+        },
+        {
+          "name": "India leaderboard (all MRs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/india-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "india-summary"
+              ]
+            },
+            "description": "Authenticated users. Returns every MR in India with their total_points and total_crowns across all tasks, plus india_total_points and india_total_crowns."
+          },
+          "response": []
         }
       ]
     },
