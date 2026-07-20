@@ -95,7 +95,6 @@ const leaderboardController = {
 
       const india_total_points = members.reduce((s, m) => s + m.total_points, 0);
       const india_total_crowns = Math.floor(india_total_points / CROWN_POINTS);
-      console.log(members.length);
       res.json({
         success: true,
         data: members,
