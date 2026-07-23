@@ -89,10 +89,10 @@ function buildModels({ key, modelName, taskId, entryFields, excludeTotalPoints, 
     const all = await DocModel.findAll({ where: { task_entry_id: entryId } });
     let status = entry.status;
     if (all.length > 0) {
-      const anyRejected = all.some((d) => d.approval_status === 'rejected');
-      const allApproved = all.every((d) => d.approval_status === 'approved');
-      if (allApproved) status = 'approved';
-      else if (anyRejected) status = 'rejected';
+      const anyApproved = all.some((d) => d.approval_status === 'approved');
+      const allRejected = all.every((d) => d.approval_status === 'rejected');
+      if (anyApproved) status = 'approved';
+      else if (allRejected) status = 'rejected';
       else status = 'pending';
     }
     const update = { status };

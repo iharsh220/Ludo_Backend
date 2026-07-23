@@ -116,79 +116,8 @@
               "path": [
                 "tasks"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Team leaderboard (my MRs)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tasks/team-summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tasks",
-                "team-summary"
-              ]
             },
-            "description": "MR/AM/RM/ZM. For a manager it returns every MR under them; for an MR it returns all peer MRs sharing the same manager(s), each with total_points and total_crowns, plus team_total_points and team_total_crowns."
-          },
-          "response": []
-        },
-        {
-          "name": "India leaderboard (all MRs)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tasks/india-summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tasks",
-                "india-summary"
-              ]
-            },
-            "description": "Authenticated users. Returns every MR in India with their total_points and total_crowns across all tasks, plus india_total_points and india_total_crowns."
-          },
-          "response": []
-        },
-        {
-          "name": "Managers leaderboard (AM/RM/ZM)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tasks/managers-summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tasks",
-                "managers-summary"
-              ]
-            },
-            "description": "AM/RM/ZM only. Response is grouped by role: AM: [...], RM: [...], ZM: [...]. Each manager's total = sum of all MRs under them (crown = floor(total/48)). Visibility is hierarchy-down: AM sees AM under them, RM sees AM+RM under them, ZM sees AM+RM+ZM under them. Plus total_points and total_crowns."
+            "description": "Returns all tasks. For MR: own per-task docs/pending counts and total_points. For AM/RM/ZM: aggregates every MR under them via organogram hierarchy. entry_count = points earned for that task, document_count = all docs, pending_count = pending docs, total_points = team total points. crown = floor(total_points / 48)."
           },
           "response": []
         }
@@ -437,7 +366,7 @@
                 }
               ]
             },
-            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page). Response includes pagination.total, page, limit, total_pages."
+            "description": "Supports pagination: ?page=1&limit=10 (default 10 per page)."
           },
           "response": []
         },
