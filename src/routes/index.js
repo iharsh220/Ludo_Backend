@@ -6,9 +6,11 @@ const authRoutes = require('./auth.routes');
 const taskEntryRoutes = require('./taskEntry.routes');
 const fileRoutes = require('./file.routes');
 const leaderboardRoutes = require('./leaderboard.routes');
+const profileRoutes = require('./profile.routes');
 
 router.use('/tasks', taskRoutes);
 router.use('/tasks', leaderboardRoutes);
+router.use('/tasks', profileRoutes);
 router.use('/auth', authRoutes);
 router.use('/task-entries', taskEntryRoutes);
 router.use('/', fileRoutes);

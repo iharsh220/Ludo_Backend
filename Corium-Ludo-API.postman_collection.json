@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "0a43777d-ae9f-4cd0-962d-d252b7e6525b",
     "name": "Corium Ludo API",
-    "description": "API collection for Corium Ludo. Base URL: http://localhost:13000/corium/ludo/api\n\nFlow:\n1) Login as MR to get a Bearer token. ONLY MRs can create task entries; AM/RM/ZM get a 403 if they try.\n2) MR creates a task entry and uploads document IMAGES only (multipart 'documents'). Non-image formats are rejected with a 400 error.\n   - Task 1 (Doctor Conversions): num_prescriptions & num_pob both OPTIONAL. Any number of images. Approval = FLAT 6 points.\n   - Task 2 (POB): EXACTLY 1 image, num_pob (units) required > 0. Points = floor(num_pob/5)*2, computed on the fly (no total_points column).\n   - Task 3 (Combo POB): EXACTLY 1 image, doctor_name & pcode both REQUIRED.\n   - Task 4 (Live Prescriptions): images MUST equal num_prescriptions. 2 points per approved image.\n   - Task 5 (JCC): any images.\n3) The MR's AM/RM/ZM (organogram hierarchy: AM->MR, RM->AM+MR, ZM->RM+AM+MR) lists pending documents and bulk approves.\n4) MRs are NOT allowed to approve (403).\n\nTask keys: doctor_conversions, pob, combo_pob, live_prescriptions, jcc_conversion",
+    "description": "API collection for Corium Ludo. Base URL: http://localhost:13000/corium/ludo/api\n\nAuth: Login as MR/AM/RM/ZM to get a Bearer token (static password: 'corium'). mr_emp_code comes from organogram.\n\nTask entry creation (MR only):\n- Task 1 (Doctor Conversions): num_prescriptions & num_pob both OPTIONAL. Any number of images. Approval = FLAT 6 points.\n- Task 2 (POB): EXACTLY 1 image, num_pob (units) required > 0. Points = floor(num_pob/5)*2 (no total_points column).\n- Task 3 (Combo POB): EXACTLY 1 image, doctor_name & pcode BOTH REQUIRED. tab1_units & tab2_units REQUIRED. Approval = 4 points per doc.\n- Task 4 (Live Prescriptions): exact image count = num_prescriptions. 2 points per approved image.\n- Task 5 (JCC): any images.\n\nManager APIs:\n- GET /tasks: per-task counts, team aggregation for AM/RM/ZM.\n- GET /tasks/team-summary: MR peers by region; AM/RM/ZM see MRs under them.\n- GET /tasks/india-summary: all MRs in India.\n- GET /tasks/managers-summary: manager leaderboard grouped AM/RM/ZM (AM sees AM, RM sees AM+RM, ZM sees AM+RM+ZM).\n- GET /tasks/profile: paginated flat list of task entries + full documents (MR own; AM/RM/ZM see under MRs).\n\nTask keys: doctor_conversions, pob, combo_pob, live_prescriptions, jcc_conversion",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "5599247",
     "_collection_link": "https://go.postman.co/collection/5599247-0a43777d-ae9f-4cd0-962d-d252b7e6525b?source=collection_link"
@@ -120,11 +120,117 @@
             "description": "Returns all tasks. For MR: own per-task docs/pending counts and total_points. For AM/RM/ZM: aggregates every MR under them via organogram hierarchy. entry_count = points earned for that task, document_count = all docs, pending_count = pending docs, total_points = team total points. crown = floor(total_points / 48)."
           },
           "response": []
+        },
+        {
+          "name": "Team leaderboard (my MRs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/team-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "team-summary"
+              ]
+            },
+            "description": "MR/AM/RM/ZM. For MR: returns all MRs sharing the same region with their total_points and total_crowns. For AM/RM/ZM: returns every MR under the logged-in manager via organogram hierarchy, with total_points and total_crowns each, plus team_total_points and team_total_crowns."
+          },
+          "response": []
+        },
+        {
+          "name": "India leaderboard (all MRs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/india-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "india-summary"
+              ]
+            },
+            "description": "Authenticated users. Returns every MR in India with their total_points and total_crowns across all tasks, plus india_total_points and india_total_crowns."
+          },
+          "response": []
+        },
+        {
+          "name": "Managers leaderboard (AM/RM/ZM)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/managers-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "managers-summary"
+              ]
+            },
+            "description": "AM/RM/ZM only. Response grouped by role: AM: [...], RM: [...], ZM: [...]. Each manager's total_points = sum of all MRs under them; total_crowns = floor(total_points / 48). Visibility: AM sees AM, RM sees AM+RM, ZM sees AM+RM+ZM."
+          },
+          "response": []
+        },
+        {
+          "name": "Profile (task entries + docs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/profile?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+              "description": "Returns a paginated flat list of task entries grouped by task name. MR sees own entries only. AM/RM/ZM see every entry from MRs under them (organogram hierarchy). Response format: { \"Live Prescriptions\": [{ entry_id, task_id, mr_emp_code, mr_name, region, status, total_points, created_at, documents[] }], \"Doctor Conversions\": [...] }. Pagination: ?page=1&limit=10."
+          },
+          "response": []
         }
-      ]
-    },
-    {
-      "name": "Doctor Conversions",
+        ]
+      },
+      {
+        "name": "Doctor Conversions",
       "item": [
         {
           "name": "Create entry (upload docs)",
