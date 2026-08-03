@@ -1,7 +1,7 @@
 const Organogram = require('../models/organogram');
 const jwt = require('jsonwebtoken');
 
-const STATIC_PASSWORD = process.env.STATIC_PASSWORD || 'corium';
+const STATIC_PASSWORD = process.env.STATIC_PASSWORD || 'corium' || 'Grogaintab';
 const JWT_SECRET = process.env.JWT_SECRET || 'corium_jwt_secret';
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
 
